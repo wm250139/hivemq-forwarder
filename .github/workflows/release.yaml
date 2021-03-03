@@ -37,7 +37,7 @@ jobs:
         id: setup_jdk
         uses: actions/setup-java@v1
         with:
-          java_version: 11
+          java-version: 11
       - name: Cache Gradle packages
         id: cache_gradle_packages
         uses: actions/cache@v2
