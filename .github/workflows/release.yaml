@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+env:
+  APP_NAME: ${{ 'hivemq-forwarder' }}
+
 jobs:
   create_release:
     name: Create Release
