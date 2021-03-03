@@ -32,7 +32,7 @@ jobs:
       - name: Get App Version
         id: get_version
         run: |
-          echo "::set-env name=APP_VERSION::$(sed -e 's/"//g' <<< cat build.gradle.kts | grep 'version = ' | cut -d'=' -f2 | awk '{$1=$1};1')"
+          echo "APP_VERSION=$(sed -e 's/"//g' <<< cat build.gradle.kts | grep 'version = ' | cut -d'=' -f2 | awk '{$1=$1};1')" >> $GITHUB_ENV
       - name: Set up JDK
         id: setup_jdk
         uses: actions/setup-java@v1
