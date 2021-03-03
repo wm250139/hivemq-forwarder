@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create_release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+  publish_release:
+    name: Publish Release
+    needs: create_release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get App Version
+        id: get_version
+        run: |
+          echo "::set-env name=APP_VERSION::$(sed -e 's/"//g' <<< cat build.gradle.kts | grep 'version = ' | cut -d'=' -f2 | awk '{$1=$1};1')"
+      - name: Set up JDK
+        id: setup_jdk
+        uses: actions/setup-java@v1
+        with:
+          java_version: 11
+      - name: Cache Gradle packages
+        id: cache_gradle_packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Gradle Build
+        id: gradle_build
+        run: |
+          ./gradlew hivemqExtensionZip
+      - name: Upload Release Asset
+        id: upload_release_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./build/libs/${{ env.APP_NAME }}-${{ env.APP_VERSION }}.zip
+          asset_name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}.zip
+          asset_content_type: application/zip
+      - name: Rollback Release
+        if: failure() && needs.create_release.outputs.id != ''
+        uses: author/action-rollback@stable
+        with:
+          id: ${{ needs.create_release.id }}
+          tag: ${{ github.ref }}
